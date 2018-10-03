@@ -100,7 +100,7 @@ def do_stop_extraction(obj_pk):
         one_app.update(status='s')
 
     except Exception as e:
-        logger.error('do_stop exception %s', e)
+        logger.exception(e)
 
 def unlock_extraction(obj_pk):
     try:
@@ -113,7 +113,7 @@ def unlock_extraction(obj_pk):
         one_app.update(status='f', lock=None)
         logger.info('unlock> %s unlocked', one_app.name)
     except Exception as e:
-        logger.error('unlock exception %s', e)
+        logger.exception(e)
 
 def do_extraction_cmd(action=None, obj=None):
     logger.info('do_cmd %s %s', action, obj)
@@ -191,7 +191,7 @@ def do_stop_export(obj_pk):
         export.update('', 's')
 
     except Exception as e:
-        logger.error('do_stop exception %s', e)
+        logger.exception(e)
 
 def do_export_cmd(action=None, obj=None):
     logger.info('do_export_cmd %s %s %s %s %s', action, obj, obj.export_type, obj.collection, obj.last_tweet)
