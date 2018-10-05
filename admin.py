@@ -46,30 +46,15 @@ class TwitterListExtractionAdmin(admin.ModelAdmin):
 
 class TwitterListExtractionExportAdmin(admin.ModelAdmin):
     readonly_fields = ('task_id', 'status', 'link_file',)
-    list_display = ('name', 'collection', 'export_type', 'export_format', 'last_tweet', 'task_id', 'status')#'file')#, 'get_file_url')#), 'download')
+    list_display = ('name', 'collection', 'export_type', 'export_format', 'last_tweet', 'task_id', 'status', 'download')#'file')#, 'get_file_url')#), 'download')
     actions = [run, stop, download]
 
+    class Media:
+        js = ("js/project.js",)
 
-    #def download(self, obj):
-        #return format_html("<a href='/static/output/{0}'>{0}</a>", obj.link_file)
-        #f = open('./tucat/output/' + obj.link_file, 'r')
-        #response = HttpResponse(f, content_type='text/csv')
-        #response['Content-Disposition'] = ('attachment; filename='+ obj.link_file)
-        #return response
-        #if obj.file is not "":
-        #return format_html("<a href=" + redirect("/static/output/" + obj.link_file).url + ">{0}</a>", obj.link_file)
-        #return format_html("<a href=" + obj.file.url + ">{0}</a>", obj.link_file)
-        #else:
-        #    return None
-        #f = open('./tucat/output/' + obj.link_file, 'r')
-        #response = HttpResponse(f, content_type='text/csv')
-        #response['Content-Disposition'] = ('attachment; filename='+ obj.link_file)
-        #return redirect(response)
-        #return format_html("<a href=" + redirect(obj.file.url).url + ">{0}</a>", obj.file)
-
-
-    #download.allow_tags = True
-    #download.short_description = 'Download'
+    def download(self, obj):
+        button_html = '<button type="submit" class="button" type="button" onclick="download_file(%d)">Download</button>' % obj.id
+        return format_html(button_html)
 
 class ExtractionCollectionAdmin(admin.ModelAdmin):
     list_display = ('owner_name', 'list_name', 'completed')
