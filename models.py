@@ -1,14 +1,9 @@
 from django.utils import timezone
 from django.db import models
 from django.db.models import signals
-from django.core.files import File
-
-#from private_storage.fields import PrivateFileField
 
 from tucat.application.models import TucatElement
 from tucat.core.models import TucatTask
-
-#from tucat.core.models import TwitterList, TimeStampedModel, STATUS_CHOICES
 
 
 class TwitterListExtraction(TucatElement):
@@ -69,17 +64,6 @@ class TwitterListExtractionExport(TucatTask):
     link_file = models.CharField(blank=True, null=True, max_length=200)
     #file = PrivateFileField("File", default="")
     file = models.FileField(upload_to='output/', default=None)
-
-    def update(self, task_id, status, link_file=None):
-        self.task_id = task_id
-        self.status = status
-
-        if link_file is None:
-            self.save()
-        else:
-            with open('./tucat/output/' + link_file, 'r') as f:
-                self.file = File(f)
-                self.save()
 
     class Meta:
         abstract = False

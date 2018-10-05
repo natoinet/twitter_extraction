@@ -8,8 +8,7 @@ from pathlib import Path
 import re
 
 from django.conf import settings
-#from django.http import HttpResponse
-#from django.core.files import File
+from django.core.files import File
 
 #from private_storage.fields import PrivateFileField
 
@@ -138,7 +137,8 @@ def do_run_export(self, obj_pk):
     try:
         output = None
         db_name = __package__.replace('.', '_')
-        out_folder = str(Path(__file__).parents[1] / 'output')
+        #out_folder = str(Path(__file__).parents[1] / 'media/output')
+        out_folder = str(settings.APPS_DIR.path('media')) + '/output' 
         export.link_file = output
         export.update(self.request.id, 'r')
 
@@ -173,8 +173,14 @@ def do_run_export(self, obj_pk):
 
         result = output.decode("utf-8")
         export.link_file = re.findall(r"\S+", result)[1]
+        logger.debug('do_run_export export.link_file %s', export.link_file)
 
-        export.update(self.request.id, 'c', link_file=export.link_file)
+        with open(out_folder  + '/' + export.link_file, 'r') as f:
+            export.file = File(f)
+            export.save()
+
+        export.update(self.request.id, 'c')
+
     except Exception as e:
         logger.exception(e)
         export.update(self.request.id, 'f')

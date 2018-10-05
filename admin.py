@@ -2,14 +2,16 @@ import logging
 import re
 
 from django.contrib import admin
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.management import call_command
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.utils.html import format_html
 from django.shortcuts import redirect
 
 from tucat.twitter_extraction.models import TwitterListExtraction, TwitterListExtractionExport, ExportationType, ExportationFormat, ExtractionCollection
 
 logger = logging.getLogger('application')
+
 
 def run(modeladmin, request, queryset):
     logger.info('Command run %s %s', request, queryset)
@@ -19,6 +21,7 @@ def run(modeladmin, request, queryset):
         call_command('export', obj=obj, run='run')
 run.short_description = "Run the export"
 
+
 def stop(modeladmin, request, queryset):
     logger.info('Command run %s %s', request, queryset)
 
@@ -27,22 +30,26 @@ def stop(modeladmin, request, queryset):
         call_command('export', obj=obj, stop='stop')
 stop.short_description = "Stop the export"
 
-#def download(self, request, queryset):
+
 def download(modeladmin, request, queryset):
+
+    site = str(get_current_site(request))
     for obj in queryset:
-        logger.info('Command export download for %s', obj.link_file)
-        #link_file = re.findall(r"\S+", obj.link_file)[1]
-        f = open('./tucat/output/' + obj.link_file, 'r')
-        #f = open(obj.file.url, 'r')
-        response = HttpResponse(f, content_type='text/csv')
-        response['Content-Disposition'] = ('attachment; filename='+ obj.link_file)
-        return response
-download.short_description = "Download This export (only one at a time)"
+        try:
+            logger.debug('Command export download for %s', str(obj.file) )
+            response = FileResponse(obj.file, as_attachment=True)
+
+            return response
+        except Exception as e:
+            logger.exception(e)
+
+download.short_description = "Download this export file (one at a time)"
 
 
 class TwitterListExtractionAdmin(admin.ModelAdmin):
     list_display = ('owner_name', 'list_name', 'status', 'modified', 'is_enabled')
     readonly_fields = ('modified', 'status')
+
 
 class TwitterListExtractionExportAdmin(admin.ModelAdmin):
     readonly_fields = ('task_id', 'status', 'link_file',)
@@ -50,11 +57,14 @@ class TwitterListExtractionExportAdmin(admin.ModelAdmin):
     actions = [run, stop, download]
 
     class Media:
+        # Adds the js script to the HTML admin view
+        # https://docs.djangoproject.com/en/2.1/topics/forms/media/
         js = ("js/project.js",)
 
     def download(self, obj):
         button_html = '<button type="submit" class="button" type="button" onclick="download_file(%d)">Download</button>' % obj.id
         return format_html(button_html)
+
 
 class ExtractionCollectionAdmin(admin.ModelAdmin):
     list_display = ('owner_name', 'list_name', 'completed')
