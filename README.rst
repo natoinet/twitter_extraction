@@ -9,7 +9,7 @@ In order to to so, you must simply follow the steps at https://github.com/natoin
 Clone the Twitter list extraction plugin to the Tucat volume
 -------------
 
-  # sudo docker exec -it tucat_djangoapp_1 git clone https://github.com/natoinet/twitter_extraction
+  # sudo docker cp tucat/twitter_extraction `doc_tucat`:/opt/services/djangoapp/tucat/twitter_extraction/
 
   # cd tucat
 
@@ -23,13 +23,12 @@ the following line :
 
   'tucat.twitter_extraction',
 
-Then you need save the file and exit.
-
+Then you save and exit the file.
 
 Copy the modified Tucat configuration file to the Tucat container :
 -------------
 
-  # sudo docker cp config/settings/docker.py -it tucat_djangoapp_1:config/settings/docker.py
+  # sudo docker cp config/settings/docker.py `doc_tucat`:/opt/services/djangoapp/config/settings/docker.py
 
 
 Setup the plugin
