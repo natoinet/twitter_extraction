@@ -6,16 +6,23 @@ Prerequisites:
 Install the Tucat.
 In order to to so, you must simply follow the steps at https://github.com/natoinet/tucat
 
+Create a docker alias for the TucatApp container
+--------------
+
+  # alias doc_tucat='sudo docker ps -a -f name=tucat_django -q'
+
 Clone the Twitter list extraction plugin to the Tucat volume
 -------------
+Inside the Tucat folder, clone the twitter_extraction repo
+
+  # git clone https://github.com/natoinet/tucat
 
   # sudo docker cp tucat/twitter_extraction `doc_tucat`:/opt/services/djangoapp/tucat/twitter_extraction/
-
-  # cd tucat
 
 Add the Twitter list extraction plugin app to the Tucat
 --------------
 With a text editor like vim, open the Tucat configuration file :
+
   # vim config/settings/docker.py
 
 Then, in the LOCAL_APPS section, after tucat.application, you need to insert

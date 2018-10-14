@@ -63,7 +63,7 @@ class TwitterListExtractionExport(TucatTask):
     last_tweet = models.DateField(blank=True, null=True)
     link_file = models.CharField(blank=True, null=True, max_length=200)
     #file = PrivateFileField("File", default="")
-    file = models.FileField(upload_to='output/', default=None)
+    file = models.FileField(upload_to='output/', blank=True, null=True, default=None)
 
     class Meta:
         abstract = False
