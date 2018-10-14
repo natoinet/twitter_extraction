@@ -15,7 +15,7 @@ Clone the Twitter list extraction plugin to the Tucat volume
 -------------
 Inside the Tucat folder, clone the twitter_extraction repo
 
-  # git clone https://github.com/natoinet/tucat
+  # git clone https://github.com/natoinet/twitter_extraction
 
   # sudo docker cp tucat/twitter_extraction `doc_tucat`:/opt/services/djangoapp/tucat/twitter_extraction/
 
