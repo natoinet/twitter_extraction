@@ -52,8 +52,8 @@ class TwitterListExtractionAdmin(admin.ModelAdmin):
 
 
 class TwitterListExtractionExportAdmin(admin.ModelAdmin):
-    readonly_fields = ('task_id', 'status', 'link_file',)
-    list_display = ('name', 'collection', 'export_type', 'export_format', 'last_tweet', 'task_id', 'status', 'download')#'file')#, 'get_file_url')#), 'download')
+    readonly_fields = ('task_id', 'status', 'link_file', 'file')
+    list_display = ('name', 'collection', 'export_type', 'export_format', 'last_tweet', 'task_id', 'status', 'download')
     actions = [run, stop, download]
 
     class Media:
