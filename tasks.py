@@ -3,14 +3,11 @@ from __future__ import absolute_import
 import logging
 import subprocess
 from datetime import datetime
-from os.path import dirname
 from pathlib import Path
 import re
 
 from django.conf import settings
 from django.core.files import File
-
-#from private_storage.fields import PrivateFileField
 
 from celery import task
 from celery.app.task import Task
@@ -138,7 +135,7 @@ def do_run_export(self, obj_pk):
         output = None
         db_name = __package__.replace('.', '_')
         #out_folder = str(Path(__file__).parents[1] / 'media/output')
-        out_folder = str(settings.APPS_DIR.path('media')) + '/output' 
+        out_folder = str(settings.APPS_DIR.path('media')) + '/output'
         export.link_file = output
         export.update(self.request.id, 'r')
 
