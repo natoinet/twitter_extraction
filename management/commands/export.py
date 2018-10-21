@@ -11,4 +11,5 @@ class Command(TucatExportCommand):
     '''
 
     def do_cmd(self, action=None, obj=None):
+        logger.debug('twitter_extraction export do_cmd %s %s %s', str(self), action, str(obj))
         do_export_cmd(action=action, obj=obj)
