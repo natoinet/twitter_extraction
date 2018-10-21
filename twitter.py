@@ -4,10 +4,6 @@ import json
 from datetime import datetime
 from collections import defaultdict
 import logging
-import logging.config
-import threading
-import time
-import queue
 
 from celery import task
 from celery.app.task import Task
@@ -24,6 +20,7 @@ from tucat.core.token import get_app_token, get_users_token
 from tucat.core.celery import app
 from tucat.core.apilimit import ApiLimitFunction
 from tucat.application.models import TucatApplication
+from tucat.core.base import get_collection, drop_collection
 
 logger = logging.getLogger('twitter_extraction')
 
@@ -41,30 +38,13 @@ top_users = set()
 db_name = __package__.replace('.', '_')
 colname = None
 
-def drop_collection(database, collection):
-    logger.debug('Drop collection %s', database)
-    
-    client = MongoClient(settings.MONGO_CLIENT)
-    db = client[database]
-    db.drop_collection(collection)
-
-def get_collection(database, collection):
-    logger.debug('get collection %s from database %s', collection, database)
-    
-    client = MongoClient(settings.MONGO_CLIENT)
-    db = client[database]
-
-    logger.debug('return database %s collection %s', database, collection)
-    
-    return db[collection]
-
 def get_status(src_json, key1, key2):
     result = None
-    
+
     result = src_json.get(key1, None)
     if (result is not None):
         result = result.get(key2, None)
-    
+
     return result
 
 
@@ -115,7 +95,7 @@ def get_user_dict(screen_name, top_user, json_user, following, follower):
         'statussource' : get_status(json_user, 'status', 'source'),
         'statusplace' : get_status(json_user, 'status', 'place'),
         'statusgeo' : get_status(json_user, 'status', 'geo')}
-    
+
     return user_dict
 
 
@@ -125,7 +105,7 @@ def add_user_to_mongo(screen_name, top_user, json_user, following, follower):
 
     logger.debug('add_user_to_mongo')
 
-    user_dict = get_user_dict(screen_name, top_user, json_user, following, follower)      
+    user_dict = get_user_dict(screen_name, top_user, json_user, following, follower)
     collection_extraction = get_collection(db_name, colname)
     collection_extraction.insert(user_dict)
 
@@ -136,13 +116,13 @@ def addTopUsersToResults(url, parameters, res_status_code, res_json):
     global all_users
     global top_users
     global db_name
-    
+
     logger.info('addTopUsersToResults url: %s - parameters: %s status_code: %s', url, len(parameters), res_status_code)
-    
+
     if (res_status_code is not 200):
         logger.warning('addTopUsersToResults NOT 200 url: %s - parameters: %s status_code: %s', url, len(parameters), res_status_code)
         return
-        
+
     users_results = get_collection(db_name, 'users_results')
 
     for one_user_json in res_json['users']:
@@ -161,15 +141,15 @@ def addAllUsersToResults(url, parameters, res_status_code, res_json):
     global all_users_following_id
     global all_users_follower_id
     global current_function
-    
+
     logger.info('addAllUsersToResults url: %s parameters: %s status_code: %s', url, len(parameters), res_status_code)
-    
+
     current_function = None
-    
+
     if (res_status_code is not 200):
         logger.warning('addAllUsersToResults NOT 200 url: %s - parameters: %s status_code: %s', url, len(parameters), res_status_code)
         return
-        
+
     users_results = get_collection(db_name, 'users_results')
 
     for one_user_json in res_json:
@@ -188,25 +168,25 @@ def addAllUsersToResults(url, parameters, res_status_code, res_json):
                 'top_user' : False}
             #users_results.insert(user_result)
 
-            #add_user_to_gdata_collection(user_result['screen_name'], False, user_result['json_result'], 
+            #add_user_to_gdata_collection(user_result['screen_name'], False, user_result['json_result'],
             #    user_result['following'], user_result['follower'])
-            add_user_to_mongo(user_result['screen_name'], False, user_result['json_result'], 
+            add_user_to_mongo(user_result['screen_name'], False, user_result['json_result'],
                 user_result['following'], user_result['follower'])
 
         else:
             # Is a top user => update existing document in collection
             logger.debug('addAllUsersToResults update existing one_user_json: %s',
                 one_user_json['screen_name'])
-        
+
             following = list(all_users_following_id[one_user_json['id']])
             follower = list(all_users_follower_id[one_user_json['id']])
-        
+
             #users_results.update({'date': DATE_START, 'user_id' : one_user_json['id']},
             #    { "$set" : {'following' : following, 'follower' : follower}})
 
-            #add_user_to_gdata_collection(one_user_json['screen_name'], True, one_user_json, 
+            #add_user_to_gdata_collection(one_user_json['screen_name'], True, one_user_json,
             #    following, follower)
-            add_user_to_mongo(one_user_json['screen_name'], True, one_user_json, 
+            add_user_to_mongo(one_user_json['screen_name'], True, one_user_json,
                 following, follower)
 
 
@@ -223,7 +203,7 @@ def addRelationToResults(url, parameters, res_status_code, res_json):
     if (res_status_code is not 200):
         logger.warning('addRelationToResults NOT 200 url: %s - parameters: %s status_code: %s', url, len(parameters), res_status_code)
         return
-        
+
     relation_type = None
     if (url == 'https://api.twitter.com/1.1/followers/ids.json'):
         relation_type = 'followers_id'
@@ -245,30 +225,30 @@ def addRelationToResults(url, parameters, res_status_code, res_json):
     #user is a follower if in top users following list and inversely
     for each_user_id in relation_list:
         if (relation_type is 'followers_id'):
-            logger.debug('addRelationToResults all_users_following_id %s', 
+            logger.debug('addRelationToResults all_users_following_id %s',
                 all_users_following_id[each_user_id])
             all_users_following_id[each_user_id].add(parameters['screen_name'])
-        
+
         elif (relation_type is 'following_id'):
-            logger.debug('addRelationToResults all_users_following_id %s', 
+            logger.debug('addRelationToResults all_users_following_id %s',
                 all_users_follower_id[each_user_id])
             all_users_follower_id[each_user_id].add(parameters['screen_name'])
 
 
 def get_hundred_ids():
     global all_users
-    
+
     parameters = []
     count = 1
     print (len(all_users))
-    #Find a way using a subset to retrieve only 100 at a time then move to the next one!
+
     while len(all_users) > (count - 1) * 100:
         start = 100 * (count - 1)
         end = 100 * count
         hundred_ids = ','.join(map(str, list(all_users)[start:end]))
         logger.debug('url Hundred Ids: %s', hundred_ids)
 
-        parameters.append({'user_id' : hundred_ids})    
+        parameters.append({'user_id' : hundred_ids})
         count += 1
 
     logger.debug('get_hundred_ids parameters: %s', parameters)
@@ -281,7 +261,7 @@ def tw_extraction(owner_name='', list_name='', collection_name=''):
     colname = collection_name
 
     logger.info('tw_extraction start %s %s', owner_name, list_name)
-    
+
     current_function = None
     app_token = get_app_token('twitter')
     users_token = get_users_token ('twitter')
@@ -297,11 +277,11 @@ def tw_extraction(owner_name='', list_name='', collection_name=''):
 
     """Extract Top users"""
     url = 'https://api.twitter.com/1.1/lists/members.json'
-    parameters = [{'owner_screen_name' : owner_name, 'slug' : list_name}]    
+    parameters = [{'owner_screen_name' : owner_name, 'slug' : list_name}]
     logger.info('parameters %s', parameters)
-    #current_function = ApiLimitFunction(url, CONSUMER, TOKENS, parameters, PAGING_NAME, PAGING_KEY, REMAINING_KEY, RESET_EPOCH_KEY, addTopUsersToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
+
     current_function = ApiLimitFunction(url, app_token, users_token, parameters, PAGING_NAME, PAGING_KEY, REMAINING_KEY, RESET_EPOCH_KEY, addTopUsersToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
-    #_queue.put(*current_function)
+
     current_function.run()
 
     logger.info('tw_extraction post_members')
@@ -318,7 +298,6 @@ def tw_extraction(owner_name='', list_name='', collection_name=''):
         parameters_followers.append({'screen_name' : user_id})
     parameters_friends = list(parameters_followers)
 
-    #current_function = ApiLimitFunction(url, CONSUMER, TOKENS, parameters_followers, PAGING_NAME, PAGING_KEY, REMAINING_KEY, RESET_EPOCH_KEY, addRelationToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
     current_function = ApiLimitFunction(url, app_token, users_token, parameters_followers, PAGING_NAME, PAGING_KEY, REMAINING_KEY, RESET_EPOCH_KEY, addRelationToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
     current_function.run()
     logger.info('tw_extraction post_followers')
@@ -330,7 +309,7 @@ def tw_extraction(owner_name='', list_name='', collection_name=''):
 
     """Extract Following ids"""
     url = 'https://api.twitter.com/1.1/friends/ids.json'
-    #current_function = ApiLimitFunction(url, CONSUMER, TOKENS, parameters_friends, PAGING_NAME, PAGING_KEY, REMAINING_KEY, RESET_EPOCH_KEY, addRelationToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
+
     current_function = ApiLimitFunction(url, app_token, users_token, parameters_friends, PAGING_NAME, PAGING_KEY, REMAINING_KEY, RESET_EPOCH_KEY, addRelationToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
     current_function.run()
     logger.info('tw_extraction post_friends')
@@ -343,8 +322,7 @@ def tw_extraction(owner_name='', list_name='', collection_name=''):
     """Extract Follower & Following"""
     url = 'https://api.twitter.com/1.1/users/lookup.json'
     parameters = get_hundred_ids()
-    #current_function = ApiLimitFunction(url, CONSUMER, TOKENS, parameters, None, None, REMAINING_KEY, RESET_EPOCH_KEY, addAllUsersToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
+
     current_function = ApiLimitFunction(url, app_token, users_token, parameters, None, None, REMAINING_KEY, RESET_EPOCH_KEY, addAllUsersToResults, {200 : 'ok', 401 : 'ok', 429 : 'wait'})
     current_function.run()
     logger.info('tw_extraction post_lookup')
-
