@@ -1,17 +1,15 @@
 import logging
-import re
 
 from django.contrib import admin
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.management import call_command
-from django.http import HttpResponse, FileResponse
+from django.http import FileResponse
 from django.utils.html import format_html
-from django.shortcuts import redirect
 
 from tucat.twitter_extraction.models import TwitterListExtraction, TwitterListExtractionExport, ExportationType, ExportationFormat, ExtractionCollection
 
-logger = logging.getLogger('application')
 
+logger = logging.getLogger('application')
 
 def run(modeladmin, request, queryset):
     logger.info('Command run %s %s', request, queryset)
