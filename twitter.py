@@ -13,7 +13,6 @@ from django.http import HttpResponse
 import requests
 from requests_oauthlib import OAuth1
 import pymongo
-from pymongo import MongoClient
 from django.conf import settings
 
 from tucat.core.token import get_app_token, get_users_token

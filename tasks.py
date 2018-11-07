@@ -40,10 +40,7 @@ def do_run_extraction(self, obj_pk):
 
         tucat_elements = TwitterListExtraction.objects.filter(application_id=one_app.id, is_enabled=True)
         for element in tucat_elements:
-            colname = "-".join([element.owner_name, element.list_name, datetime.utcnow().strftime('%Y-%m-%d-%H-%M')])
-            tw_extraction(owner_name=element.owner_name, list_name=element.list_name, collection_name=colname)
-            ExtractionCollection.objects.create_collection(element.owner_name, element.list_name, datetime.now(), colname)
-            add_dt_to_mongo(colname)
+            do_run_extraction_list(element.owner_name, element.list_name)
 
         one_app.update(status='c')
 
@@ -56,6 +53,12 @@ def do_run_extraction(self, obj_pk):
 
     return self.request.id
 
+def do_run_extraction_list(owner_name, list_name):
+    colname = "-".join([owner_name, list_name, datetime.utcnow().strftime('%Y-%m-%d-%H-%M')])
+    tw_extraction(owner_name=owner_name, list_name=list_name, collection_name=colname)
+    ExtractionCollection.objects.create_collection(owner_name, list_name, datetime.now(), colname)
+    add_dt_to_mongo(colname)
+
 def add_dt_to_mongo(col_name):
     logger.info('add_dt')
 
@@ -64,12 +67,15 @@ def add_dt_to_mongo(col_name):
         collection = get_collection(db_name, col_name)
 
         for doc in collection.find():
-            doc['dtcreatedat'] = get_dt( doc['createdat'] )
-            doc['dtstatuscreatedat'] = get_dt( doc['statuscreatedat'] )
-            collection.replace_one({'_id': doc['_id']}, doc)
+            add_dt_to_mongo_document(collection, doc)
 
     except Exception as e:
         logger.exception(e)
+
+def add_dt_to_mongo_document(collection, doc):
+    doc['dtcreatedat'] = get_dt( doc['createdat'] )
+    doc['dtstatuscreatedat'] = get_dt( doc['statuscreatedat'] )
+    collection.replace_one({'_id': doc['_id']}, doc)
 
 def get_dt(date_val):
     dt_val = datetime.fromtimestamp(0)
